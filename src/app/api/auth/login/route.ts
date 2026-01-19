@@ -3,8 +3,6 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
@@ -28,12 +26,15 @@ export async function POST(req: Request) {
     }
 
     const valid = await bcrypt.compare(password, user.password);
+
     if (!valid) {
       return NextResponse.json(
         { message: "Email atau password salah" },
         { status: 401 }
       );
     }
+
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
 
     const token = await new SignJWT({
       id: user.id,
