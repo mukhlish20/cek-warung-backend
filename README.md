@@ -117,5 +117,5 @@ Untuk menjalankan proyek ini di lingkungan pengembangan lokal Anda, ikuti langka
 Silakan ajukan issue atau pull request jika Anda memiliki saran atau menemukan bug.
 
 ## Lisensi
-
+baru
 ## Trigger deploy auth login
