@@ -1,0 +1,52 @@
+
+model so_detail {
+  id              String   @id @default(uuid())
+  lembar          Int
+  barang_id       String
+  nama_barang     String
+  qty_awal_pack   Int
+  qty_awal_pcs    Int
+  qty_akhir_pack  Int
+  qty_akhir_pcs   Int
+  total_awal_pcs  Int
+  total_akhir_pcs Int
+  nilai_awal      Int
+  nilai_akhir     Int
+  selisih_nilai   Int
+  updatedAt       DateTime @updatedAt
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PETUGAS
+}
+
+model User {
+  id        String   @id @default(uuid())
+  nama      String
+  email     String   @unique
+  password  String
+  role      Role     @default(PETUGAS)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Barang {
+  id          String   @id @default(uuid())
+  nama        String
+  isi         Int
+  harga_pack Int
+  harga_pcs  Int
+  updatedAt  DateTime @updatedAt
+
+  @@unique([nama])
+}
