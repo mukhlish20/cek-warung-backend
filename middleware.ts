@@ -6,7 +6,6 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Biarkan login lewat
   if (pathname.startsWith("/api/auth/login")) {
     return NextResponse.next();
   }
@@ -24,7 +23,10 @@ export async function middleware(req: NextRequest) {
     const token = authHeader.split(" ")[1];
 
     try {
-      await jwtVerify(token, secret);
+      await jwtVerify(token, secret, {
+        algorithms: ["HS256"], // 🔥 INI FIX-NYA
+      });
+
       return NextResponse.next();
     } catch (err) {
       console.error("JWT VERIFY ERROR:", err);
