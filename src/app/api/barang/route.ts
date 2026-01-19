@@ -1,9 +1,19 @@
-
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // 🔐 Ambil user dari middleware
+    const userId = req.headers.get("x-user-id");
+    const role = req.headers.get("x-user-role");
+
+    if (!userId) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const barangs = await prisma.barang.findMany({
       select: {
         id: true,
