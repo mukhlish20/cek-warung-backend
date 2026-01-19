@@ -8,20 +8,25 @@ export async function middleware(req: NextRequest) {
   }
 
   const authHeader = req.headers.get("authorization");
-
   if (!authHeader) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : authHeader;
+  const token = authHeader.replace("Bearer ", "");
 
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-    await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret);
 
-    return NextResponse.next();
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-user-id", payload.id as string);
+    requestHeaders.set("x-user-role", payload.role as string);
+
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   } catch {
     return NextResponse.json(
       { message: "Token tidak valid" },
