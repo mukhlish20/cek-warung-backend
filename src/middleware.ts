@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-
 export async function middleware(req: NextRequest) {
+  console.log("🔥 MIDDLEWARE HIT:", req.nextUrl.pathname);
+
   const authHeader = req.headers.get("authorization");
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader) {
     return NextResponse.json(
-      { message: "Unauthorized" },
+      { message: "NO AUTH HEADER" },
+      { status: 401 }
+    );
+  }
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return NextResponse.json(
+      { message: "NOT BEARER" },
       { status: 401 }
     );
   }
@@ -18,14 +25,10 @@ export async function middleware(req: NextRequest) {
   try {
     await jwtVerify(token, secret);
     return NextResponse.next();
-  } catch (err) {
+  } catch {
     return NextResponse.json(
-      { message: "Token tidak valid" },
+      { message: "INVALID TOKEN" },
       { status: 401 }
     );
   }
 }
-
-export const config = {
-  matcher: ["/api/barang/:path*"],
-};
