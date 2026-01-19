@@ -3,7 +3,10 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 export async function middleware(req: NextRequest) {
-  if (req.nextUrl.pathname === "/api/auth/login") {
+  const { pathname } = req.nextUrl;
+
+  // ⛔ LEWATI SEMUA AUTH ROUTE
+  if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }
 
@@ -20,9 +23,8 @@ export async function middleware(req: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     await jwtVerify(token, secret);
-
     return NextResponse.next();
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { message: "Token tidak valid" },
       { status: 401 }
