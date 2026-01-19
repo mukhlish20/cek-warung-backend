@@ -1,40 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET as string
-);
-
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-
-  // ⛔ BYPASS LOGIN (WAJIB)
-  if (pathname === "/api/auth/login") {
-    return NextResponse.next();
-  }
-
-  const authHeader = req.headers.get("authorization");
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json(
-      { message: "Unauthorized" },
-      { status: 401 }
-    );
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    await jwtVerify(token, secret);
-    return NextResponse.next();
-  } catch {
-    return NextResponse.json(
-      { message: "Token tidak valid" },
-      { status: 401 }
-    );
-  }
+export function middleware(req: NextRequest) {
+  return NextResponse.json({
+    path: req.nextUrl.pathname,
+    hasAuthHeader: req.headers.has("authorization"),
+    authHeader: req.headers.get("authorization"),
+    jwtSecretExists: !!process.env.JWT_SECRET,
+  });
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/api/barang"],
 };
