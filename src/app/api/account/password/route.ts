@@ -7,6 +7,8 @@ const hashPassword = async (password: string) => {
   return await bcryptjs.hash(password, salt);
 };
 
+
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
