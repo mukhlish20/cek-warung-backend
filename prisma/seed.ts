@@ -12,12 +12,16 @@ async function main() {
     create: {
       nama: "Admin Warung",
       email: "admin@cekwarung.local",
-      password: hashed,
+      password: hashed, // ✅ HASH
       role: Role.ADMIN,
     },
   });
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .then(() => prisma.$disconnect())
+  .catch(async (e) => {
+    console.error(e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });
