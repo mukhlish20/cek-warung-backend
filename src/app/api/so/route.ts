@@ -149,3 +149,46 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+/* =====================================================
+   DELETE /api/so
+   RESET DATA SO (ADMIN ONLY)
+===================================================== */
+export async function DELETE(req: NextRequest) {
+  try {
+    // AUTH (dari middleware)
+    const userId = req.headers.get("x-user-id");
+    const userRole = req.headers.get("x-user-role");
+
+    if (!userId || !userRole) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // ROLE GUARD
+    if (userRole !== "ADMIN") {
+      return NextResponse.json(
+        { message: "Forbidden: Admin only" },
+        { status: 403 }
+      );
+    }
+
+    // HAPUS SEMUA DATA SO
+    const result = await prisma.so_detail.deleteMany();
+
+    return NextResponse.json({
+      success: true,
+      deletedCount: result.count,
+      message: "Semua data SO berhasil direset",
+    });
+  } catch (error) {
+    console.error("DELETE /api/so (reset) error:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
