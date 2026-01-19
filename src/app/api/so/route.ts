@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+/* =====================================================
+   POST /api/so
+===================================================== */
 export async function POST(req: NextRequest) {
   try {
-    /* =========================
-       AUTH (DARI MIDDLEWARE)
-    ========================= */
+    // AUTH (dari middleware)
     const userId = req.headers.get("x-user-id");
     const userRole = req.headers.get("x-user-role");
 
@@ -16,9 +17,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    /* =========================
-       BODY (PAKSA NUMBER)
-    ========================= */
     const body = await req.json();
 
     const lembar = Number(body.lembar);
@@ -44,9 +42,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    /* =========================
-       AMBIL BARANG
-    ========================= */
     const barang = await prisma.barang.findUnique({
       where: { id: barang_id },
     });
@@ -58,13 +53,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    /* =========================
-       LOGIC HITUNG (FINAL & AMAN)
-       SAMA DENGAN FRONTEND
-    ========================= */
+    // LOGIC HITUNG (AMAN)
     const isiPerPack = barang.isi;
 
-    // fallback harga_pcs (anti bug data lama)
     const hargaPcs =
       barang.harga_pcs > 0
         ? barang.harga_pcs
@@ -81,9 +72,6 @@ export async function POST(req: NextRequest) {
 
     const selisih_nilai = nilai_akhir - nilai_awal;
 
-    /* =========================
-       SIMPAN (CREATE SAJA)
-    ========================= */
     const result = await prisma.so_detail.create({
       data: {
         lembar,
@@ -109,6 +97,52 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("POST /api/so error:", error);
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/* =====================================================
+   GET /api/so
+   optional ?lembar=1
+===================================================== */
+export async function GET(req: NextRequest) {
+  try {
+    // AUTH (dari middleware)
+    const userId = req.headers.get("x-user-id");
+    const userRole = req.headers.get("x-user-role");
+
+    if (!userId || !userRole) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const lembarParam = searchParams.get("lembar");
+
+    const whereClause = lembarParam
+      ? { lembar: Number(lembarParam) }
+      : {};
+
+    const data = await prisma.so_detail.findMany({
+      where: whereClause,
+      orderBy: [
+        { lembar: "asc" },
+        { nama_barang: "asc" },
+      ],
+    });
+
+    return NextResponse.json({
+      success: true,
+      total: data.length,
+      data,
+    });
+  } catch (error) {
+    console.error("GET /api/so error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
