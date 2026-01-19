@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 
-export function middleware(req: NextRequest) {
+const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // ✅ Biarkan login & public route lewat
-  if (
-    pathname.startsWith("/api/auth/login") ||
-    pathname.startsWith("/api/public")
-  ) {
+  // Biarkan login lewat
+  if (pathname.startsWith("/api/auth/login")) {
     return NextResponse.next();
   }
 
-  // 🔐 Proteksi semua /api/*
   if (pathname.startsWith("/api")) {
     const authHeader = req.headers.get("authorization");
 
@@ -26,9 +24,10 @@ export function middleware(req: NextRequest) {
     const token = authHeader.split(" ")[1];
 
     try {
-      jwt.verify(token, process.env.JWT_SECRET!);
+      await jwtVerify(token, secret);
       return NextResponse.next();
     } catch (err) {
+      console.error("JWT VERIFY ERROR:", err);
       return NextResponse.json(
         { message: "Token tidak valid" },
         { status: 401 }
