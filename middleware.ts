@@ -2,51 +2,43 @@ import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
 export function middleware(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
+  const { pathname } = req.nextUrl;
 
-  // Kalau tidak ada token
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json(
-      { message: "Unauthorized" },
-      { status: 401 }
-    );
+  // ✅ Biarkan login & public route lewat
+  if (
+    pathname.startsWith("/api/auth/login") ||
+    pathname.startsWith("/api/public")
+  ) {
+    return NextResponse.next();
   }
 
-  const token = authHeader.split(" ")[1];
+  // 🔐 Proteksi semua /api/*
+  if (pathname.startsWith("/api")) {
+    const authHeader = req.headers.get("authorization");
 
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    ) as {
-      id: string;
-      role: string;
-    };
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    // Sisipkan info user ke header
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-user-id", decoded.id);
-    requestHeaders.set("x-user-role", decoded.role);
+    const token = authHeader.split(" ")[1];
 
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  } catch {
-    return NextResponse.json(
-      { message: "Invalid or expired token" },
-      { status: 401 }
-    );
+    try {
+      jwt.verify(token, process.env.JWT_SECRET!);
+      return NextResponse.next();
+    } catch (err) {
+      return NextResponse.json(
+        { message: "Token tidak valid" },
+        { status: 401 }
+      );
+    }
   }
+
+  return NextResponse.next();
 }
 
-// ⬇️ INI WAJIB
 export const config = {
-  matcher: [
-    "/api/barang/:path*",
-    "/api/users/:path*",
-    "/api/so/:path*",
-    "/api/sync/:path*",
-  ],
+  matcher: ["/api/:path*"],
 };
