@@ -1,61 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    // =====================
-    // AUTH (SESUAI PROJECT)
-    // =====================
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    /* =========================
+       AUTH (DARI MIDDLEWARE)
+    ========================= */
+    const userId = req.headers.get("x-user-id");
+    const userRole = req.headers.get("x-user-role");
+
+    if (!userId || !userRole) {
       return NextResponse.json(
         { message: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split(" ")[1];
-    const user = verifyToken(token);
-
-    if (!user) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // =====================
-    // BODY
-    // =====================
+    /* =========================
+       BODY (PAKSA NUMBER)
+    ========================= */
     const body = await req.json();
-    const {
-      lembar,
-      barang_id,
-      nama_barang,
-      qty_awal_pack,
-      qty_awal_pcs,
-      qty_akhir_pack,
-      qty_akhir_pcs,
-    } = body;
+
+    const lembar = Number(body.lembar);
+    const barang_id = body.barang_id as string;
+    const nama_barang = body.nama_barang as string | undefined;
+
+    const qty_awal_pack = Number(body.qty_awal_pack);
+    const qty_awal_pcs = Number(body.qty_awal_pcs);
+    const qty_akhir_pack = Number(body.qty_akhir_pack);
+    const qty_akhir_pcs = Number(body.qty_akhir_pcs);
 
     if (
-      lembar === undefined ||
+      !Number.isFinite(lembar) ||
       !barang_id ||
-      qty_awal_pack === undefined ||
-      qty_awal_pcs === undefined ||
-      qty_akhir_pack === undefined ||
-      qty_akhir_pcs === undefined
+      !Number.isFinite(qty_awal_pack) ||
+      !Number.isFinite(qty_awal_pcs) ||
+      !Number.isFinite(qty_akhir_pack) ||
+      !Number.isFinite(qty_akhir_pcs)
     ) {
       return NextResponse.json(
-        { message: "Data tidak lengkap" },
+        { message: "Data tidak lengkap / tidak valid" },
         { status: 400 }
       );
     }
 
-    // =====================
-    // BARANG
-    // =====================
+    /* =========================
+       AMBIL BARANG
+    ========================= */
     const barang = await prisma.barang.findUnique({
       where: { id: barang_id },
     });
@@ -67,27 +58,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // =====================
-    // HITUNG ULANG
-    // =====================
+    /* =========================
+       LOGIC HITUNG (FINAL & AMAN)
+       SAMA DENGAN FRONTEND
+    ========================= */
+    const isiPerPack = barang.isi;
+
+    // fallback harga_pcs (anti bug data lama)
+    const hargaPcs =
+      barang.harga_pcs > 0
+        ? barang.harga_pcs
+        : Math.floor(barang.harga_pack / barang.isi);
+
     const total_awal_pcs =
-      qty_awal_pack * barang.isi + qty_awal_pcs;
+      qty_awal_pack * isiPerPack + qty_awal_pcs;
 
     const total_akhir_pcs =
-      qty_akhir_pack * barang.isi + qty_akhir_pcs;
+      qty_akhir_pack * isiPerPack + qty_akhir_pcs;
 
-    const nilai_awal =
-      total_awal_pcs * barang.harga_pcs;
+    const nilai_awal = total_awal_pcs * hargaPcs;
+    const nilai_akhir = total_akhir_pcs * hargaPcs;
 
-    const nilai_akhir =
-      total_akhir_pcs * barang.harga_pcs;
+    const selisih_nilai = nilai_akhir - nilai_awal;
 
-    const selisih_nilai =
-      nilai_akhir - nilai_awal;
-
-    // =====================
-    // SIMPAN
-    // =====================
+    /* =========================
+       SIMPAN (CREATE SAJA)
+    ========================= */
     const result = await prisma.so_detail.create({
       data: {
         lembar,
@@ -111,8 +107,8 @@ export async function POST(req: NextRequest) {
       success: true,
       data: result,
     });
-  } catch (err) {
-    console.error("POST /api/so error:", err);
+  } catch (error) {
+    console.error("POST /api/so error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
