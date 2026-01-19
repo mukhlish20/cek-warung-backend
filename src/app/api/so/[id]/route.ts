@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../../../lib/prisma";
 
 /* =====================================================
    DELETE /api/so/:id
 ===================================================== */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // AUTH (dari middleware)
@@ -20,7 +20,8 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    // ⬇️ PENTING: params HARUS di-await
+    const { id } = await context.params;
 
     if (!id) {
       return NextResponse.json(
@@ -41,7 +42,7 @@ export async function DELETE(
       );
     }
 
-    // Hapus
+    // Hapus data
     await prisma.so_detail.delete({
       where: { id },
     });
