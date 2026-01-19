@@ -6,6 +6,13 @@ const secret = new TextEncoder().encode(
 );
 
 export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // ⛔ BYPASS LOGIN (WAJIB)
+  if (pathname === "/api/auth/login") {
+    return NextResponse.next();
+  }
+
   const authHeader = req.headers.get("authorization");
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -20,7 +27,7 @@ export async function middleware(req: NextRequest) {
   try {
     await jwtVerify(token, secret);
     return NextResponse.next();
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { message: "Token tidak valid" },
       { status: 401 }
@@ -29,8 +36,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/api/(barang|users|sync)/:path*"
-  ],
+  matcher: ["/api/:path*"],
 };
-
