@@ -30,10 +30,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(barangs);
   } catch (e: any) {
-    console.error("❌ Barang GET Error:", e);
-    return NextResponse.json(
-      { success: false, message: e.message },
-      { status: 500 }
+      console.error("❌ Barang GET Error:", e);
+      return NextResponse.json(
+        { success: false, message: e.message },
+        { status: 500 }
     );
   }
 }
