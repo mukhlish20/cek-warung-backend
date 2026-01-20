@@ -4,14 +4,12 @@ import ExcelJS from "exceljs";
 
 export async function GET(req: NextRequest) {
   try {
-    // =========================
-    // AUTH
-    // =========================
-    const auth = verifyToken(req);
-    if (!auth || auth.role !== "ADMIN") {
+    // AUTH DARI MIDDLEWARE
+    const userRole = req.headers.get("x-user-role");
+    if (userRole !== "ADMIN") {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
